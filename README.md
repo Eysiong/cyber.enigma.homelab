@@ -20,7 +20,7 @@ An enterprise-grade Windows Server 2022 and Windows 10 active directory homelab 
 ## 🛠️ Phase 2: Domain Controller Configuration (DC01)
 * **Active Directory Forest:** Successfully promoted to the root DC for `cyber.enigma.ph`.
 * **Organizational Structure:** Created the `Employees` Organizational Unit (OU).
-* **Identity Management:** Provisioned standard employee account `jdoe` (John Doe).
+* **Identity Management:** Provisioned standard employee account `e.saporna` (Eldee Saporna).
 * **Group Policy (GPO):** Enforced `Restrict - Control Panel Access` linked directly to the `Employees` OU.
 
 ---
@@ -64,7 +64,7 @@ Configured the local domain controller as a central file storage engine to gover
 * **Central Workspace Engine:** Built a unified storage root at `C:\CompanyShares` housing independent subdirectories tailored to individual corporate departments.
 * **Access Control Mechanisms:** Configured permissive Advanced Share parameters alongside highly restricted NTFS discretionary access control lists (DACLs). Inherited permissions were stripped from child folders, granting explicit `Modify` access tokens only to corresponding operational identities.
 * **Automated Drive Routing:** Created a Group Policy preference object (`Map - Company Share Network Drives`) linked to the parent `Employees` tree. The policy updates user configurations on the fly to natively map the secure network directory directly to the client's file system as a persistent `S:` drive letter.
-* **Cross-Validation Testing:** Logged onto a domain workstation as an HR operator (`j.andaya`). The `S:` drive automatically mapped at login. The operator successfully conducted daily data management inside the `HR` directory, but was explicitly denied access by the Windows file subsystem when attempting to breach the `Finance` or `IT` document vaults.
+* **Cross-Validation Testing:** Logged onto a domain workstation as an HR operator (`j.carpena`). The `S:` drive automatically mapped at login. The operator successfully conducted daily data management inside the `HR` directory, but was explicitly denied access by the Windows file subsystem when attempting to breach the `Finance` or `IT` document vaults.
 
 ---
 
