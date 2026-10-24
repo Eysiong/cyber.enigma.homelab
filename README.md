@@ -40,8 +40,31 @@ Switching **Client01**'s network adapter to automatic (DHCP) successfully yields
 
 ---
 
-## 🏁 Phase 4: PowerShell Active Directory Automation
-*(Coming Soon - In Progress!)*
+## 📜 Phase 4: PowerShell Active Directory Automation
+To simulate an enterprise onboarding workflow, user provisioning was completely automated via a native PowerShell script.
+
+* **Data Source:** Managed via an external flat file database (`C:\new_employees.csv`) detailing employee names, departments, and dynamic corporate titles.
+* **Logic Framework:** Built a conditional `foreach` loop that scans the CSV data array to parse variables programmatically using robust `.Substring(0,1)` string management to output uniform corporate-standard user logon names (`firstinitial.lastname`).
+* **Directory Structural Controls:** The script automatically evaluates directory paths, dynamically creates corresponding departmental sub-OUs (**Executive, Finance, HR, IT**) inside the parent `Employees` container if missing, and gracefully skips pre-existing records via integrated validation checkpoints to avoid pipeline conflicts.
+* **Security Controls Applied:** Generated uniform UPN strings (`username@cyber.enigma.ph`), injected complex default temporary credentials, explicitly enabled the accounts natively, and checked the administrative force-flag requiring users to explicitly update their credentials at initial workstation logon.
+
+---
+
+## 🛡️ Phase 5: Advanced Group Policy Objects (GPOs)
+To transition away from flat global policies, the domain structure was augmented with highly targeted departmental security controls:
+* **GPO Applied:** `Restrict - Command Prompt Access`
+* **Targeting Vector:** Linked directly to the **HR, Finance, and Executive** sub-OUs while explicitly omitting the **IT** OU.
+* **Result Matrix:** Non-technical employees are securely blocked from accessing the command line terminal environment to enforce internal security boundaries. IT personnel maintain uninterrupted workspace controls.
+
+---
+
+## 📂 Phase 6: Secured Enterprise File Services
+Configured the local domain controller as a central file storage engine to govern file access control across the enterprise fabric.
+
+* **Central Workspace Engine:** Built a unified storage root at `C:\CompanyShares` housing independent subdirectories tailored to individual corporate departments.
+* **Access Control Mechanisms:** Configured permissive Advanced Share parameters alongside highly restricted NTFS discretionary access control lists (DACLs). Inherited permissions were stripped from child folders, granting explicit `Modify` access tokens only to corresponding operational identities.
+* **Automated Drive Routing:** Created a Group Policy preference object (`Map - Company Share Network Drives`) linked to the parent `Employees` tree. The policy updates user configurations on the fly to natively map the secure network directory directly to the client's file system as a persistent `S:` drive letter.
+* **Cross-Validation Testing:** Logged onto a domain workstation as an HR operator (`j.andaya`). The `S:` drive automatically mapped at login. The operator successfully conducted daily data management inside the `HR` directory, but was explicitly denied access by the Windows file subsystem when attempting to breach the `Finance` or `IT` document vaults.
 
 ---
 
