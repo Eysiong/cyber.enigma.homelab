@@ -40,6 +40,7 @@ To scale administration efficiently, user provisioning and security tracking bou
 
 ### 🚀 1. Automated Onboarding Engine (Script 1)
 An advanced PowerShell automation script handles the **Identity Layer** by parsing raw employee rosters from an external flat-file database (`C:\new_employees.csv`).
+*   **Roster Template File:** [new_employees.csv](./new_employees.csv)
 
 *   **Source Code Inventory:** [scripts/Sync-ADUserOnboarding.ps1](./scripts/Sync-ADUserOnboarding.ps1)
 *   **Execution Profile:** Run this script first to establish directory entries.
