@@ -1,74 +1,98 @@
 # 🌐 Cyber Enigma Enterprise Homelab
-An enterprise-grade Windows Server 2022 and Windows 10 active directory homelab built completely inside an isolated virtualized environment.
+An enterprise-grade Windows Server 2022 and Windows 10 Active Directory homelab built completely inside an isolated, sandboxed virtual environment. 
+
+This repository documents the end-to-end design, secure identity architecture, resource governance, and disaster recovery baselines implemented within the lab fabric.
 
 ---
 
-## 🏗️ Phase 1: Core Architecture & Topology
-* **Host Platform:** VirtualBox (Windows 11 Client Host)
-* **Network Topology:** 100% isolated VirtualBox Internal Network named `CorpNetwork`.
-* **Domain Name:** `cyber.enigma.ph`
+## 🏗️ Phase 1: Core Architecture & Network Topology
+*   **Host Platform:** VirtualBox (Windows 11 Client Host Platform)
+*   **Network Topology:** 100% isolated VirtualBox Internal Network named `CorpNetwork`.
+*   **Active Directory Domain Services (AD DS) Forest:** `cyber.enigma.ph`
 
-### 🖥️ Asset Inventory
+### 🖥️ Asset Inventory Matrix
 
-| Device Name | Operating System | IP Address | Subnet Mask | Role / Purpose |
+| Device Name | Operating System | IP Address | Subnet Mask | Role / Infrastructure Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| **DC01** | Windows Server 2022 Standard | `192.168.10.10` | `255.255.255.0` | Domain Controller, AD DS, DNS, DHCP |
-| **Client01** | Windows 10 Professional | Dynamic (DHCP) | `255.255.255.0` | Corporate Workstation |
+| **DC01** | Windows Server 2022 Standard | 192.168.10.10 | 255.255.255.0 | Domain Controller, AD DS, DNS, DHCP, FSRM, Backup Primary |
+| **Client01** | Windows 10 Professional | Dynamic (DHCP) | 255.255.255.0 | Managed Corporate Workstation Asset |
 
 ---
 
-## 🛠️ Phase 2: Domain Controller Configuration (DC01)
-* **Active Directory Forest:** Successfully promoted to the root DC for `cyber.enigma.ph`.
-* **Organizational Structure:** Created the `Employees` Organizational Unit (OU).
-* **Identity Management:** Provisioned standard employee account `e.saporna` (Eldee Saporna).
-* **Group Policy (GPO):** Enforced `Restrict - Control Panel Access` linked directly to the `Employees` OU.
+## 📡 Phase 2: Core Infrastructure Network Services
+To transition away from rigid static IP configurations, **DC01** was authorized as the primary DHCP lease distributor for the domain segment.
+
+*   **Authorized Scope Name:** `CorpNetwork-Pool`
+*   **Lease Pool Allocation:** `192.168.10.50` to `192.168.10.254` *(Reserves `.1` through `.49` for static infrastructure assets).*
+*   **Broadcast Options Distributed:**
+    *   **Option 003 (Router/Gateway):** `192.168.10.1`
+    *   **Option 006 (DNS Server Authority):** `192.168.10.10`
+
+### 🧪 DHCP Verification Testing
+Switching the network adapter profile of **Client01** to automatic dynamic retrieval yielded immediate results:
+*   **Verification Command:** `ipconfig /renew` followed by `ipconfig /all`
+*   **Result Matrix:** The client workstation successfully leased an IP within the authorized `.50+` pool and natively configured `192.168.10.10` as its explicit, primary DNS resolver.
 
 ---
 
-## 📡 Phase 3: Core Network Services (DHCP Deployment)
-To transition away from rigid static IP management, **DC01** was configured with the DHCP Server Role.
-* **Scope Name:** `CorpNetwork-Pool`
-* **Address Range Pool:** `192.168.10.50` to `192.168.10.254` (Leaves `.1` through `.49` free for static network infrastructure).
-* **Active Options:** 
-  * Option `003` (Router/Gateway): `192.168.10.1`
-  * Option `006` (DNS Server): `192.168.10.10`
+## 📜 Phase 3: Identity Lifecycle Management & Group Automation
+To scale administration efficiently, user provisioning and security tracking boundaries were transitioned from flat accounts to a programmatic framework adhering strictly to the **AGDLP best-practice standard** (*Accounts ➡️ Global Groups ➡️ Domain Local Groups ➡️ Permissions*).
 
-### 🧪 Verification & Testing
-Switching **Client01**'s network adapter to automatic (DHCP) successfully yields an active lease directly from **DC01**:
-* **Command Executed:** `ipconfig /renew` followed by `ipconfig /all`
-* **Result:** Client successfully pulled an IP address within the authorized `.50+` pool and properly configured `192.168.10.10` as its primary DNS authority.
+### 🚀 1. Automated Onboarding Engine (Script 1)
+An advanced PowerShell automation script handles the **Identity Layer** by parsing raw employee rosters from an external flat-file database (`C:\new_employees.csv`):
+*   **String Manipulation Logic:** Utilizes conditional loops and `.Substring(0,1)` string management to parse incoming names into lowercase, corporate-standard usernames (`firstinitial.lastname`).
+*   **Structural OU Auditing:** Programmatically evaluates directory paths, dynamically instantiating structural sub-OUs (`Executive`, `Finance`, `HR`, `IT`, `Developer`) inside the parent `Employees` container if missing.
+*   **Automated Identity Security Clustering (`G_` Layer):** The script dynamically spins up standardized Global Security Groups for each department (e.g., `G_Finance_Employees`) and hooks the newly generated user identities directly into their respective global group container upon execution.
+*   **Security Control Enforcements:** Forces uniform User Principal Names (UPN), injects complex initial default credentials, explicitly activates accounts, and checks the flag requiring an explicit password update at initial workstation logon.
 
----
-
-## 📜 Phase 4: PowerShell Active Directory Automation
-To simulate an enterprise onboarding workflow, user provisioning was completely automated via a native PowerShell script.
-
-* **Data Source:** Managed via an external flat file database (`C:\new_employees.csv`) detailing employee names, departments, and dynamic corporate titles.
-* **Logic Framework:** Built a conditional `foreach` loop that scans the CSV data array to parse variables programmatically using robust `.Substring(0,1)` string management to output uniform corporate-standard user logon names (`firstinitial.lastname`).
-* **Directory Structural Controls:** The script automatically evaluates directory paths, dynamically creates corresponding departmental sub-OUs (**Executive, Finance, HR, IT**) inside the parent `Employees` container if missing, and gracefully skips pre-existing records via integrated validation checkpoints to avoid pipeline conflicts.
-* **Security Controls Applied:** Generated uniform UPN strings (`username@cyber.enigma.ph`), injected complex default temporary credentials, explicitly enabled the accounts natively, and checked the administrative force-flag requiring users to explicitly update their credentials at initial workstation logon.
+### 📁 2. Automated Resource Scaffolding Engine (Script 2)
+A secondary standalone automation script handles the **Resource Layer** on the local file system by scanning Active Directory container states:
+*   **Dynamic Group Nesting (`DL_` Layer):** Automatically spins up matching Domain Local Groups (e.g., `DL_CompanyShares_Finance_Modify`) and programmatically nests the corresponding target Global Group inside it.
+*   **Dynamic Access Control Lists (DACLs):** Creates local subfolders matching department profiles under `C:\CompanyShares`, breaks NTFS permission inheritance, and uses the .NET Security Access Control namespace to apply explicit `Modify` access tokens to the Domain Local group while scrubbing non-administrative visibility.
 
 ---
 
-## 🛡️ Phase 5: Advanced Group Policy Objects (GPOs)
-To transition away from flat global policies, the domain structure was augmented with highly targeted departmental security controls:
-* **GPO Applied:** `Restrict - Command Prompt Access`
-* **Targeting Vector:** Linked directly to the **HR, Finance, and Executive** sub-OUs while explicitly omitting the **IT** OU.
-* **Result Matrix:** Non-technical employees are securely blocked from accessing the command line terminal environment to enforce internal security boundaries. IT personnel maintain uninterrupted workspace controls.
+## 🛡️ Phase 4: Enterprise Group Policy Objects (GPOs)
+Rather than maintaining generalized domain configurations, granular role-based workspace controls were deployed across the Organizational Unit architecture:
+
+*   **Policy Name:** `Restrict - Command Prompt Access`
+    *   **Targeting Vector:** Linked directly to the `HR`, `Finance`, `Developer`, and `Executive` sub-OUs while explicitly omitting the `IT` OU.
+    *   **Result:** Non-technical operators are natively blocked from launching `cmd.exe` or executing scripts, hardening the local endpoint attack surface, while IT staff maintain unobstructed console controls.
+*   **Policy Name:** `Map - Company Share Network Drives`
+    *   **Targeting Vector:** Linked to the root `Employees` tree to update user network spaces on the fly.
+    *   **Result:** Automatically maps the network share path `\\DC01\CompanyShares` directly to the client's file system as a persistent `S:` drive letter at initial logon.
 
 ---
 
-## 📂 Phase 6: Secured Enterprise File Services
-Configured the local domain controller as a central file storage engine to govern file access control across the enterprise fabric.
+## 📁 Phase 5: Storage Architecture & Governance (FSRM Deployment)
+To prevent network users from hoarding hard drive space or introducing dangerous unapproved files into corporate shares, the **File Server Resource Manager (FSRM)** role was added to **DC01**.
 
-* **Central Workspace Engine:** Built a unified storage root at `C:\CompanyShares` housing independent subdirectories tailored to individual corporate departments.
-* **Access Control Mechanisms:** Configured permissive Advanced Share parameters alongside highly restricted NTFS discretionary access control lists (DACLs). Inherited permissions were stripped from child folders, granting explicit `Modify` access tokens only to corresponding operational identities.
-* **Automated Drive Routing:** Created a Group Policy preference object (`Map - Company Share Network Drives`) linked to the parent `Employees` tree. The policy updates user configurations on the fly to natively map the secure network directory directly to the client's file system as a persistent `S:` drive letter.
-* **Cross-Validation Testing:** Logged onto a domain workstation as an HR operator (`j.carpena`). The `S:` drive automatically mapped at login. The operator successfully conducted daily data management inside the `HR` directory, but was explicitly denied access by the Windows file subsystem when attempting to breach the `Finance` or `IT` document vaults.
+*   **Automated Storage Quotas:** Configured a custom **2 GB Hard Quota** applied dynamically to target storage directories. The system enforces strict blocks when breached and writes high-priority warnings to the Application Event Log once directory paths cross an 85% capacity threshold.
+*   **Active File Screening:** Implemented an aggressive, active **Executable File Screen** across `C:\CompanyShares`. The real-time kernel filter driver inspects files on the fly and blocks users from saving or executing unapproved file strings (`*.exe`, `*.msi`, `*.bat`).
 
 ---
 
-## 🧠 Solved Infrastructure Roadblocks
-* **Hardware Freezes:** Resolved multi-threading decompressor loop issues during installation by throttling the VM to 1 vCPU temporarily, then safely restoring it to 2 vCPUs post-install.
-* **Registry Override:** Bypassed unexpected loop setup reboots via a `regedit` ChildCompletion flag override.
-* **Hypervisor Layer:** Resolved underlying AMD-V/SVM sub-layer virtualization errors inside the host physical BIOS.
+## 🛡️ Phase 6: System Resilience & Disaster Recovery Baseline
+To guarantee domain survivability and baseline service continuity against configuration failures or systemic data corruption, manual backup and health mechanisms were configured:
+
+*   **System State Backup Schedule:** Utilizing **Windows Server Backup**, a dedicated, raw, unallocated **50 GB secondary VirtualBox hard disk (`Disk 1`)** was mounted and formatted as a permanent storage repository. A daily automated schedule executes at **11:00 PM** to pull bare-metal System State images (including the Active Directory `ntds.dit` database, SYSVOL shares, registry configs, and boot sector structures).
+*   **Performance Monitoring Telemetry Alerts:** Created a user-defined Data Collector Set within **Performance Monitor** targeting the local CPU core parameters (`% Processor Time`). The engine is actively armed to instantly log a high-priority warning entry into the Windows System logs whenever processor utilization spikes above 90%.
+
+---
+
+## 💻 Phase 7: Advanced Virtualization & Hyper-V Core
+To satisfy the virtualization requirements of the curriculum within a Type-2 hypervisor constraints environment, **Nested Virtualization** was forced down to the processor layer:
+
+*   **Hypervisor Interface Unlock:** VirtualBox configuration states were modified via the physical host command line interface (`VBoxManage modifyvm "DC01" --nested-hw-virt on`) to cleanly pass down underlying physical AMD-V/VT-x virtualization extensions.
+*   **Kernel Package Injection:** Because typical graphical wizards block deployment inside virtualized environments, the native hypervisor engine was injected into the server image using the Deployment Image Servicing and Management framework:
+    ```powershell
+    DISM /Online /Enable-Feature /FeatureName:Microsoft-Hyper-V /All /NoRestart
+    ```
+*   **Boot Sector Initialization:** The active boot profile configuration was updated using `bcdedit /set "{current}" hypervisorlaunchtype auto` to force the hypervisor layer to wake up on system start, creating a fully functioning, native **Hyper-V Manager** control console inside **DC01**.
+
+---
+
+## 🧠 Solved Infrastructure Roadblocks & Patches
+1.  **Hardware Freezes:** Resolved deployment engine multi-threading constraints by throttling the primary server VM down to 1 vCPU during setup loops, returning it to 2 vCPUs post-installation.
+2.  **NTFS String Translation Faults:** Resolved localized Active Directory folder permissions failures during automated ACL execution by updating scripts to pull the target NetBIOS context dynamically via `(Get-ADDomain).NetBIOSName` instead of hardcoding raw text values.
+3.  **VirtualBox Storage Detection Failures:** Resolved Windows Server Backup validation errors by initializing the second virtual drive under `diskmgmt.msc` using the GPT partition standard while intentionally leaving it as *Unallocated* raw storage for the application to claim.
