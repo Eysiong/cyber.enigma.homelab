@@ -39,16 +39,34 @@ Switching the network adapter profile of **Client01** to automatic dynamic retri
 To scale administration efficiently, user provisioning and security tracking boundaries were transitioned from flat accounts to a programmatic framework adhering strictly to the **AGDLP best-practice standard** (*Accounts ➡️ Global Groups ➡️ Domain Local Groups ➡️ Permissions*).
 
 ### 🚀 1. Automated Onboarding Engine (Script 1)
-An advanced PowerShell automation script handles the **Identity Layer** by parsing raw employee rosters from an external flat-file database (`C:\new_employees.csv`):
-*   **String Manipulation Logic:** Utilizes conditional loops and `.Substring(0,1)` string management to parse incoming names into lowercase, corporate-standard usernames (`firstinitial.lastname`).
-*   **Structural OU Auditing:** Programmatically evaluates directory paths, dynamically instantiating structural sub-OUs (`Executive`, `Finance`, `HR`, `IT`, `Developer`) inside the parent `Employees` container if missing.
-*   **Automated Identity Security Clustering (`G_` Layer):** The script dynamically spins up standardized Global Security Groups for each department (e.g., `G_Finance_Employees`) and hooks the newly generated user identities directly into their respective global group container upon execution.
-*   **Security Control Enforcements:** Forces uniform User Principal Names (UPN), injects complex initial default credentials, explicitly activates accounts, and checks the flag requiring an explicit password update at initial workstation logon.
+An advanced PowerShell automation script handles the **Identity Layer** by parsing raw employee rosters from an external flat-file database (`C:\new_employees.csv`).
+
+*   **Source Code Inventory:** [scripts/Sync-ADUserOnboarding.ps1](./scripts/Sync-ADUserOnboarding.ps1)
+*   **Execution Profile:** Run this script first to establish directory entries.
+
+```powershell
+# Core logic framework snippet
+foreach (User in Employees) {
+    SamAccountName = (User.FirstName.Substring(0,1) + "." + \(User.LastName).ToLower()\)GlobalGroupName = "G_( OUName.Replace(' ', '') )_Employees"
+    New-ADUser @UserParams
+    Add-ADGroupMember -Identity GlobalGroupName -Members SamAccountName
+}
+```
 
 ### 📁 2. Automated Resource Scaffolding Engine (Script 2)
-A secondary standalone automation script handles the **Resource Layer** on the local file system by scanning Active Directory container states:
-*   **Dynamic Group Nesting (`DL_` Layer):** Automatically spins up matching Domain Local Groups (e.g., `DL_CompanyShares_Finance_Modify`) and programmatically nests the corresponding target Global Group inside it.
-*   **Dynamic Access Control Lists (DACLs):** Creates local subfolders matching department profiles under `C:\CompanyShares`, breaks NTFS permission inheritance, and uses the .NET Security Access Control namespace to apply explicit `Modify` access tokens to the Domain Local group while scrubbing non-administrative visibility.
+A secondary standalone automation script handles the **Resource Layer** on the local file system by scanning Active Directory container states.
+
+*   **Source Code Inventory:** [scripts/Initialize-FolderSecurity.ps1](./scripts/Initialize-FolderSecurity.ps1)
+*   **Execution Profile:** Run this script immediately following the user onboarding pass.
+
+```powershell
+# Core logic framework snippet
+foreach (\$Dept in \(Departments) {\)DomainLocalName = "DL_CompanyShares_( OUName.Replace(' ', '') )_Modify"
+    Add-ADGroupMember -Identity \$DomainLocalName -Members \(GlobalGroupName\)NetBIOSName = (Get-ADDomain).NetBIOSName
+    ArIdentity = "NetBIOSName\$DomainLocalName"
+    Set-Acl -Path FolderPath -AclObject Acl
+}
+```
 
 ---
 
